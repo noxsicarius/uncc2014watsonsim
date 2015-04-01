@@ -1,6 +1,5 @@
 package edu.uncc.cs.watsonsim.nlp;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -8,11 +7,7 @@ import java.util.List;
 import org.apache.commons.lang3.ObjectUtils;
 
 import static edu.uncc.cs.watsonsim.nlp.Trees.concat;
-import static edu.uncc.cs.watsonsim.nlp.Trees.parse;
-import edu.stanford.nlp.ling.Sentence;
 import edu.stanford.nlp.trees.Tree;
-import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
-import edu.stanford.nlp.util.CoreMap;
 import edu.uncc.cs.watsonsim.Environment;
 import edu.uncc.cs.watsonsim.Phrase;
 
@@ -85,8 +80,8 @@ public class ClueType {
 				l = merge(l, detectPart(kid));
 			return l;
 		}
+		
 	}
-	
 	/**
 	 * Detect the LAT using a simple rule-based approach
 	 * @return The most general single-word noun LAT

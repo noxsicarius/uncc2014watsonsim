@@ -2,15 +2,12 @@ package edu.uncc.cs.watsonsim.search;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 import edu.uncc.cs.watsonsim.Environment;
 import edu.uncc.cs.watsonsim.Passage;
 import edu.uncc.cs.watsonsim.Score;
-import edu.uncc.cs.watsonsim.StringUtils;
 import edu.uncc.cs.watsonsim.Translation;
 import edu.uncc.cs.watsonsim.scorers.Merge;
-import lemurproject.indri.ParsedDocument;
 import lemurproject.indri.QueryEnvironment;
 import lemurproject.indri.ScoredExtentResult;
 
@@ -32,6 +29,14 @@ public class IndriSearcher extends Searcher {
 		} else {
 			try {
 				q.addIndex(env.getOrDie("indri_index"));
+				q.setMemory(1<<28);
+                // These are taken from Lucene
+                /*q.setStopwords(new String[] {
+                    "a", "an", "and", "are", "as", "at", "be", "but", "by",
+                    "for", "if", "in", "into", "is", "it",
+                    "no", "not", "of", "on", "or", "such",
+                    "that", "the", "their", "then", "there", "these",
+                    "they", "this", "to", "was", "will", "with"});*/
 			} catch (Exception e) {
 				System.out.println("Setting up the Indri index failed."
 						+ " Is the index in the correct location?"
@@ -57,7 +62,7 @@ public class IndriSearcher extends Searcher {
 		//ParsedDocument[] full_texts;
 		String[] titles;
 		try {
-			ser = q.runQuery(query, MAX_RESULTS);
+			ser = q.runQuery(q.reformulateQuery(query), MAX_RESULTS);
 			docnos = q.documentMetadata(ser, "docno");
 			//full_texts = IndriSearcher.q.documents(ser);
 			titles = q.documentMetadata(ser, "title");

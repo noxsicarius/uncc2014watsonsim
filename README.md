@@ -44,12 +44,9 @@ This list isn't exhaustive, but it should be a good overview
     - [Windows](http://www.csie.ntu.edu.tw/~cjlin/libsvm/) ([instructions](http://stackoverflow.com/questions/25060178/which-weka-and-libsvm-jar-files-to-use-in-java-code-for-svm-classification))
   - [Gradle](http://gradle.org/downloads) (just unzip; no install necessary, keep in mind it updates very often)
   - Run `gradle eclipse` in `uncc2014watsonsim/` to download platform-independent dependencies and create an Eclipse project. Your path to the gradle binary will be different. (e.g. `/home/josh/Downloads/gradle-2.22/bin/gradle eclipse`)
-- For the data: **Outage** (21.03.2015: *Our files were hosted on Dropbox, which suspended our links on account of bandwidth. It should be back up by Monday; we are making some other changes as well before the next update.*)
-  - A good internet connection, patience, and about 100GB free space
-  - [Postgres](http://www.postgresql.org/download/) (we use 9.3)
-  - The latest [Lucene and Indri indexes](https://dl.dropboxusercontent.com/u/92563044/watsonsim/data-snapshot.tar.xz). Just unzip into the data/ subdirectory.
-  - The latest [database snapshot](https://dl.dropboxusercontent.com/u/92563044/watsonsim/data-snapshot.pgdump). Load it into Postgres using `pg_restore -d watsonsim [more options as necessary] data-snapshot.pgdump`.
-  - The snapshots are updated weekly via a cron job.
+  - Install [Postgres](http://www.postgresql.org/download/) (we use 9.3)
+- [Download the latest data](https://github.com/SeanTater/uncc2014watsonsim/wiki/Data-Sources). Decompress the whole archive, placing the content in the data/ folder.
+  - Load the included database snapshot into Postgres using `pg_restore -d watsonsim [more options as necessary] data-snapshot.pgdump`.
 - For Bing web search
   - copy config.properties.sample to config.properties
   - [Create an Azure account and sign up for Bing](https://datamarket.azure.com/dataset/bing/search), put the [API key](https://datamarket.azure.com/account/keys) the right variable in the config.

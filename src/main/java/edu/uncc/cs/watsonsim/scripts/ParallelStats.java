@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.fluent.Form;
@@ -24,6 +22,10 @@ import edu.uncc.cs.watsonsim.Question;
 import edu.uncc.cs.watsonsim.Score;
 import edu.uncc.cs.watsonsim.StringUtils;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 /**
  * @author Sean Gallagher
  * @author Matt Gibson
@@ -35,6 +37,9 @@ public class ParallelStats {
      * @throws Exception 
      */
     public static void main(String[] args) throws Exception {
+        BasicConfigurator.configure();
+        Logger.getRootLogger().setLevel(Level.WARN);
+        
     	// Oversubscribing makes scheduling the CPU-scheduler's problem
         ExecutorService pool = Executors.newFixedThreadPool(50);
         long run_start = System.currentTimeMillis();
@@ -47,7 +52,8 @@ public class ParallelStats {
         try {
             pool.awaitTermination(2, TimeUnit.DAYS);
         } catch (InterruptedException ex) {
-            Logger.getLogger(ParallelStats.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getRootLogger().setLevel(Level.INFO);
+            Logger.getRootLogger().info(ex);
         }
         System.out.println("Done.");
     }
@@ -57,6 +63,7 @@ class SingleTrainingResult extends Thread {
 	private final int offset;
 	private final long run_start;
 	private final int groupsize;
+	private final Logger log = Logger.getLogger(getClass());
 	
 	public SingleTrainingResult(int offset, long run_start, int groupsize) {
 		this.offset = offset;
@@ -65,13 +72,14 @@ class SingleTrainingResult extends Thread {
 	}
 	
 	public void run() {
-		String sql = String.format("cached ORDER BY random() LIMIT %d", groupsize, offset);
+		String sql = String.format("cached LIMIT %d OFFSET %d", groupsize, offset);
 		//String sql = "ORDER BY random() LIMIT 100";
 		try {
-			new StatsGenerator("Extra commonSupport merge - Test", sql, run_start).run();
+			new StatsGenerator("anagram test", sql, run_start).run();
 		} catch (SQLException e) {
 			e.printStackTrace();
-			System.err.println(e.toString());
+			log.error("Database missing, invalid, or out of date. Check that you "
+					+ "have the latest version.", e);
 			fail("Database missing, invalid, or out of date. Check that you "
 					+ "have the latest version.");
 		}
@@ -121,6 +129,7 @@ class StatsGenerator {
 	private final int[] conf_correct = new int[100];
 	private final int[] conf_hist = new int[100];
 	private long run_start;
+	private final Logger log = Logger.getLogger(getClass());
 	
 	/**
 	 * Generate statistics on a specific set of questions
@@ -179,7 +188,7 @@ class StatsGenerator {
 		   			.name();
 			   	if (commit == null) {
 			   		commit = "";
-			   		System.err.println("Problem finding git repository.\n"
+			   		log.warn("Problem finding git repository.\n"
 			   				+ "Resulting stats will be missing information.");
 			   	}
 				branch = repo.getBranch();
@@ -205,22 +214,23 @@ class StatsGenerator {
 		try {
 			Request.Post("http://watsonsim.herokuapp.com/runs.json").bodyForm(response).execute();
 		} catch (IOException e) {
-			System.err.println("Error uploading stats. Ignoring. "
-					+ "Details follow.");
-			e.printStackTrace();
+			log.warn("Error uploading stats. Ignoring. "
+					+ "Details follow.", e);
 		}
 		
 	
-		System.out.println("" + correct[0] + " of " + questionsource.size() + " correct");
-		System.out.println("" + available + " of " + questionsource.size() + " could have been");
-		System.out.println("Mean Inverse Rank " + total_inverse_rank);
+		log.info(correct[0] + " of " + questionsource.size() + " correct");
+		log.info(available + " of " + questionsource.size() + " could have been");
+		log.info("Mean Inverse Rank " + total_inverse_rank);
 	}
 	
 	
 	/** Run statistics, then upload to the server */
 	public void run() {
 		final long start_time = System.nanoTime();
-
+		
+        //BasicConfigurator.configure();
+        //Logger.getRootLogger().setLevel(Level.INFO);
 		
 		System.out.println("Asking Questions");
 		DefaultPipeline pipe = new DefaultPipeline(run_start); 

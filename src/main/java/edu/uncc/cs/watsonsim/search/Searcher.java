@@ -6,8 +6,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.ObjectUtils;
-
 import edu.uncc.cs.watsonsim.Database;
 import edu.uncc.cs.watsonsim.Passage;
 
@@ -58,7 +56,7 @@ public abstract class Searcher {
      */
     List<Passage> fillFromSources(List<Passage> passages) {
     	List<Passage> results = new ArrayList<>();
-    	PreparedStatement fetcher = db.prep("SELECT title, text FROM meta INNER JOIN content ON meta.id=content.id WHERE reference=?;");
+    	PreparedStatement fetcher = db.prep("SELECT title, text FROM sources WHERE reference=?;");
 
     	for (Passage p: passages) {
     		ResultSet doc_row;
@@ -68,12 +66,14 @@ public abstract class Searcher {
 				if (doc_row.next()
 						&& doc_row.getString("title") != null
 						&& doc_row.getString("text") != null) {
-					results.add(new Passage(
+					Passage np = new Passage(
 							p.engine_name,
 							doc_row.getString("title"),
 							doc_row.getString("text"),
 							p.reference
-							));
+							);
+					np.scores = p.scores.clone();
+                    results.add(np);
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();

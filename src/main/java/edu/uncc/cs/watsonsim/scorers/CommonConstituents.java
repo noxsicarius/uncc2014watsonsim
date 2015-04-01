@@ -1,14 +1,12 @@
 package edu.uncc.cs.watsonsim.scorers;
 
 import java.util.HashSet;
-import java.util.List;
 
 import edu.stanford.nlp.trees.Tree;
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.Passage;
 import edu.uncc.cs.watsonsim.Phrase;
 import edu.uncc.cs.watsonsim.Question;
-import edu.uncc.cs.watsonsim.nlp.Trees;
 
 /* @author Wlodek
  * @author Sean Gallagher
@@ -19,7 +17,7 @@ import edu.uncc.cs.watsonsim.nlp.Trees;
  * This scorer can be very slow.
  */
 
-public class CoreNLPSentenceSimilarity extends PassageScorer {
+public class CommonConstituents extends PassageScorer {
 	/**
 	 * Score the similarity of two sentences according to
 	 * sum([ len(x) | x of X, y of Y, if x == y ])

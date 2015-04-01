@@ -41,8 +41,9 @@ public class WekaTee extends Researcher {
 	 */
 	public List<Answer> question(Question q, List<Answer> answers) {
 		List<double[]> new_entries = new ArrayList<>();
-		for (Answer a : answers)
+		for (Answer a : answers) {
 			new_entries.add(a.scores.clone());
+		}
 		dump(new_entries, start_time);
 		return answers;
 	}

@@ -6,11 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
-import org.apache.uima.analysis_engine.AnalysisEngine;
 
 import edu.uncc.cs.watsonsim.researchers.*;
 import edu.uncc.cs.watsonsim.scorers.*;
-import edu.uncc.cs.watsonsim.scripts.TestAnagrams;
 import edu.uncc.cs.watsonsim.search.*;
 
 /** The standard Question Analysis pipeline.
@@ -84,7 +82,7 @@ public class DefaultPipeline {
 			// You may want to cache Bing results
 			// new BingSearcher(config),
 			new CachingSearcher(env, new BingSearcher(env), "bing"),
-			new TestAnagrams()
+			new Anagrams()
 		};
 		early_researchers = Researcher.pipe(
 			//new RedirectSynonyms(env),
@@ -108,15 +106,14 @@ public class DefaultPipeline {
 			new PassageQuestionLengthRatio(),
 			new QPKeywordMatch(),
 			new QAKeywordMatch(),
-			new AnswerInQuestionScorer(),
 			new NGram(),
 			new LATCheck(env),
 			new WPPageViews(),
 			//new RandomIndexingCosineSimilarity(),
-			new DistSemCosQAScore(),
+			//new DistSemCosQAScore(),
 			//new DistSemCosQPScore(),
-			//new SentenceSimilarity(),
-			new CoreNLPSentenceSimilarity(),
+			new CommonConstituents(),
+			new AnswerPOS(),
 		};
 		late_researchers = Researcher.pipe(
 			new WekaTee(run_start),
