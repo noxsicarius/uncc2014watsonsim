@@ -1,6 +1,5 @@
 package edu.uncc.cs.watsonsim;
 
-import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,13 +63,7 @@ public class DefaultPipeline {
 	 * @param millis Millis since the Unix epoch, as in currentTimeMillis()
 	 */
 	public DefaultPipeline(long millis) {
-		Environment env;
-		try {
-			env = new Environment("data/");
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new RuntimeException("No environment: cannot create a pipeline.");
-		} 
+		Environment env = new Environment();
 		run_start = new Timestamp(millis);
 		
 		/*
@@ -82,13 +75,14 @@ public class DefaultPipeline {
 			// You may want to cache Bing results
 			// new BingSearcher(config),
 			new CachingSearcher(env, new BingSearcher(env), "bing"),
-			new Anagrams()
+			new Anagrams(env)
 		};
 		early_researchers = Researcher.pipe(
 			//new RedirectSynonyms(env),
 			new HyphenTrimmer(),
 			new StrictFilters(),
 			new MergeByText(env),
+			new MergeAnswers(),
 			//new ChangeFitbAnswerToContentsOfBlanks(),
 			new PassageRetrieval(env),
 			new MergeByCommonSupport(),
@@ -98,27 +92,30 @@ public class DefaultPipeline {
 		);
 		scorers = new Scorer[]{
 			new AnswerLength(),
-			new WordProximity(),
+			new AnswerPOS(),
+			new CommonConstituents(),
 			new Correct(env),
-			new SkipBigram(),
+			new LATCheck(env),
+			new LuceneEcho(),
+			new NGram(),
 			new PassageTermMatch(),
 			new PassageCount(),
 			new PassageQuestionLengthRatio(),
 			new QPKeywordMatch(),
 			new QAKeywordMatch(),
-			new NGram(),
-			new LATCheck(env),
-			new WPPageViews(),
+			new SkipBigram(),
+			new TopPOS(),
+			new WordProximity(),
+			new WPPageViews(env)
 			//new RandomIndexingCosineSimilarity(),
 			//new DistSemCosQAScore(),
 			//new DistSemCosQPScore(),
-			new CommonConstituents(),
-			new AnswerPOS(),
 		};
 		late_researchers = Researcher.pipe(
+			new Normalize(),
 			new WekaTee(run_start),
 			new CombineScores(),
-			new StatsDump(run_start)
+			new StatsDump(run_start, env)
 		);
 	}
 	

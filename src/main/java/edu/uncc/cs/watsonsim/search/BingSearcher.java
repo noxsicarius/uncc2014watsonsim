@@ -37,9 +37,10 @@ public class BingSearcher extends Searcher {
 	private final String key;
 	private final Logger log = Logger.getLogger(getClass());
 	public BingSearcher(Environment env) {
+		super(env);
 		Score.register("BING_ANSWER_RANK", -1, Merge.Mean);
 		Score.register("BING_ANSWER_PRESENT", 0.0, Merge.Or);
-		key = env.getOrDie("bing_api_key");
+		key = env.getConfOrDie("bing_api_key");
 	}
 	
 	public List<Passage> query(String query) {

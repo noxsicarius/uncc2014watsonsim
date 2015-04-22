@@ -10,7 +10,6 @@ import java.util.List;
  */
 public class Answer extends Phrase implements Comparable<Answer> {
     
-    
     public double[] scores = Score.empty();
     private double overall_score = Double.NaN;
     public List<Passage> passages = new ArrayList<>();
@@ -69,7 +68,11 @@ public class Answer extends Phrase implements Comparable<Answer> {
     			engines += e.engine_name.substring(0, 1);
     	
     	// Should look like: [0.9998 gil] Flying Waterbuffalos ... 
-    	return String.format("[%01f %-3s] %s", getOverallScore(), engines, text);
+    	return String.format("[%01f %-3s]%s %s",
+    			getOverallScore(),
+    			engines,
+    			Score.get(scores, "CORRECT", 0) == 1 ? "!" : " ",
+    			text);
     }
     
     public String toJSON() {
@@ -122,6 +125,11 @@ public class Answer extends Phrase implements Comparable<Answer> {
 
     	// Pick the first candidate answer
     	String candidate_text = others.get(0).text;
+    	for (Answer a: others) {
+    		if (a.text.length() < candidate_text.length()) {
+    			candidate_text = a.text;
+    		}
+    	}
     	
     	// Now make an answer from it
     	return new Answer(passages, scores, candidate_text);

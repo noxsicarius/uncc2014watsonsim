@@ -18,6 +18,7 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.DBQuestionSource;
 import edu.uncc.cs.watsonsim.DefaultPipeline;
+import edu.uncc.cs.watsonsim.Environment;
 import edu.uncc.cs.watsonsim.Question;
 import edu.uncc.cs.watsonsim.Score;
 import edu.uncc.cs.watsonsim.StringUtils;
@@ -41,7 +42,8 @@ public class ParallelStats {
         Logger.getRootLogger().setLevel(Level.WARN);
         
     	// Oversubscribing makes scheduling the CPU-scheduler's problem
-        ExecutorService pool = Executors.newFixedThreadPool(50);
+        ExecutorService pool = Executors.newWorkStealingPool();
+        
         long run_start = System.currentTimeMillis();
         int groupsize = 5000/50;
     	for (int i=2000; i < 7000; i += groupsize) {
@@ -52,8 +54,7 @@ public class ParallelStats {
         try {
             pool.awaitTermination(2, TimeUnit.DAYS);
         } catch (InterruptedException ex) {
-            Logger.getRootLogger().setLevel(Level.INFO);
-            Logger.getRootLogger().info(ex);
+            Logger.getRootLogger().error(ex);
         }
         System.out.println("Done.");
     }
@@ -75,7 +76,7 @@ class SingleTrainingResult extends Thread {
 		String sql = String.format("cached LIMIT %d OFFSET %d", groupsize, offset);
 		//String sql = "ORDER BY random() LIMIT 100";
 		try {
-			new StatsGenerator("anagram test", sql, run_start).run();
+			new StatsGenerator("answer search match -test", sql, run_start).run();
 		} catch (SQLException e) {
 			e.printStackTrace();
 			log.error("Database missing, invalid, or out of date. Check that you "
@@ -137,11 +138,12 @@ class StatsGenerator {
 	 * To understand the query, see {@link DBQuestionSource}.
 	 * @param dataset  What to name the result when it is posted online.
 	 * @param question_query  The SQL filters for the questions. 
+	 * @throws IOException 
 	 * @throws Exception
 	 */
-	public StatsGenerator(String dataset, String question_query, long run_start) throws SQLException {
+	public StatsGenerator(String dataset, String question_query, long run_start) throws SQLException{
 		this.dataset = dataset;
-		questionsource = new DBQuestionSource(question_query);
+		questionsource = new DBQuestionSource(new Environment(), question_query);
 		this.run_start = run_start;
 	}
 	
@@ -232,7 +234,7 @@ class StatsGenerator {
         //BasicConfigurator.configure();
         //Logger.getRootLogger().setLevel(Level.INFO);
 		
-		System.out.println("Asking Questions");
+		log.info("Asking Questions");
 		DefaultPipeline pipe = new DefaultPipeline(run_start); 
 		for (int i=0; i<questionsource.size(); i++) {
 			Question q = questionsource.get(i);

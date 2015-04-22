@@ -94,6 +94,8 @@ dependencies {
     // Prolog interface for dependency tree matching
     compile 'jpl:jpl:3.1.4-alpha'
     compile 'it.unibo.alice.tuprolog:tuprolog:2.1.1'
+    // Persistent Data Structures for sane transactional semantics
+    compile "org.functionaljava:functionaljava-java8:4.2"
 
 }
 
@@ -128,6 +130,10 @@ run {
     standardInput = System.in
     // Find Indri
     systemProperty "java.library.path", file("$projectDir/lib")
+    //jvmArgs "-XX:-UseCompressedOops"
+    jvmArgs "-XX:hashCode=5"
+    //jvmArgs "-Xns:100m"
+    //jvmArgs "-Xgcprio:throughput"
     main "edu.uncc.cs.watsonsim.$target"
 }
 
