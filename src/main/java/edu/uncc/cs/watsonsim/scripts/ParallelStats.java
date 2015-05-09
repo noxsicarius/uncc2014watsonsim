@@ -1,13 +1,17 @@
 package edu.uncc.cs.watsonsim.scripts;
 
-import static org.junit.Assert.fail;
-
+import java.io.BufferedReader;
+import java.io.Console;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.fluent.Form;
@@ -26,6 +30,9 @@ import edu.uncc.cs.watsonsim.StringUtils;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.uima.internal.util.IntArrayUtils;
+
+import com.google.common.util.concurrent.AtomicDouble;
 
 /**
  * @author Sean Gallagher
@@ -40,51 +47,32 @@ public class ParallelStats {
     public static void main(String[] args) throws Exception {
         BasicConfigurator.configure();
         Logger.getRootLogger().setLevel(Level.WARN);
+        Logger log = Logger.getLogger(ParallelStats.class);
         
-    	// Oversubscribing makes scheduling the CPU-scheduler's problem
-        ExecutorService pool = Executors.newWorkStealingPool();
         
-        long run_start = System.currentTimeMillis();
-        int groupsize = 5000/50;
-    	for (int i=2000; i < 7000; i += groupsize) {
-    		pool.execute(new SingleTrainingResult(i, run_start, groupsize));
-    	}
-        pool.shutdown();
-        
-        try {
-            pool.awaitTermination(2, TimeUnit.DAYS);
-        } catch (InterruptedException ex) {
-            Logger.getRootLogger().error(ex);
+        //String mode = System.console().readLine("Train or test [test]:");
+        System.out.print("Train or test [test]: ");
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        String mode = br.readLine();
+        String sql;
+        if (mode.equals("train")) {
+        	sql = String.format("cached LIMIT %d OFFSET %d", 2000, 0);
+        } else {
+        	sql = String.format("cached LIMIT %d OFFSET %d", 5000, 2000);
         }
-        System.out.println("Done.");
-    }
-}
-
-class SingleTrainingResult extends Thread {
-	private final int offset;
-	private final long run_start;
-	private final int groupsize;
-	private final Logger log = Logger.getLogger(getClass());
-	
-	public SingleTrainingResult(int offset, long run_start, int groupsize) {
-		this.offset = offset;
-		this.run_start = run_start;
-		this.groupsize = groupsize;
-	}
-	
-	public void run() {
-		String sql = String.format("cached LIMIT %d OFFSET %d", groupsize, offset);
-		//String sql = "ORDER BY random() LIMIT 100";
+		
+        System.out.print("Describe the setup: ");
+        String description = br.readLine();
 		try {
-			new StatsGenerator("answer search match -test", sql, run_start).run();
+			new StatsGenerator(description + ": " + mode, sql).run();
 		} catch (SQLException e) {
 			e.printStackTrace();
 			log.error("Database missing, invalid, or out of date. Check that you "
 					+ "have the latest version.", e);
-			fail("Database missing, invalid, or out of date. Check that you "
-					+ "have the latest version.");
 		}
-	}
+		
+        System.out.println("Done.");
+    }
 }
 
 /**
@@ -120,15 +108,13 @@ class SingleTrainingResult extends Thread {
 class StatsGenerator {
 	private final String dataset;
 	private final DBQuestionSource questionsource;
-	// correct[n] is the number of correct answers at rank n 
-	private final int[] correct = new int[100];
-	private int available = 0;
-	private double total_inverse_rank = 0;
+	private AtomicInteger available = new AtomicInteger(0);
+	private AtomicDouble total_inverse_rank = new AtomicDouble(0);
+	private AtomicInteger total_questions = new AtomicInteger(0);
+	private AtomicInteger total_correct = new AtomicInteger(0);
 	private int total_answers = 0;
 	
 	private double runtime;
-	private final int[] conf_correct = new int[100];
-	private final int[] conf_hist = new int[100];
 	private long run_start;
 	private final Logger log = Logger.getLogger(getClass());
 	
@@ -141,35 +127,96 @@ class StatsGenerator {
 	 * @throws IOException 
 	 * @throws Exception
 	 */
-	public StatsGenerator(String dataset, String question_query, long run_start) throws SQLException{
+	public StatsGenerator(String dataset, String question_query) throws SQLException{
 		this.dataset = dataset;
 		questionsource = new DBQuestionSource(new Environment(), question_query);
-		this.run_start = run_start;
+		this.run_start = System.currentTimeMillis();
 	}
 	
-	/** Measure how accurate the top question is as a histogram across confidence */
-	private void calculateConfidenceHistogram(List<Answer> answers) {
-		if (!answers.isEmpty()) {
-			// Supposing there is at least one answer
-			Answer a = answers.get(0);
-			// Clamp to [0, 99]
-			int bin = (int)(a.getOverallScore() * 99);
-			bin = Math.max(0, Math.min(bin, 99)); 
-			if(Score.get(a.scores, "CORRECT", 0.0) > 0.99) conf_correct[bin]++;
-			conf_hist[bin]++;
-		}
+	/** Run statistics, then upload to the server */
+	public void run() {
+		final long start_time = System.nanoTime();
+		
+        //BasicConfigurator.configure();
+        //Logger.getRootLogger().setLevel(Level.INFO);
+		
+		log.info("Performing train/test session\n"
+				+ "    #=top    x=top3    .=recall    ' '=missing");
+		ConcurrentHashMap<Long, DefaultPipeline> pipes =
+				new ConcurrentHashMap<>();
+		
+		int[] all_ranks = questionsource.parallelStream().mapToInt(q -> {
+			long tid = Thread.currentThread().getId();
+			DefaultPipeline pipe = pipes.computeIfAbsent(tid, (i) -> new DefaultPipeline());
+			
+			List<Answer> answers;
+			try{
+				answers = pipe.ask(q);
+			} catch (Exception e) {
+				log.fatal(e, e);
+				return 99;
+			}
+			
+			int tq = total_questions.incrementAndGet();
+			if (tq % 50 == 0) {
+				System.out.println(
+						String.format("[%d]: %d accurate",
+								total_questions.get(), total_correct.get()));
+				
+			}
+			
+			int correct_rank = 99;
+			
+			if (answers.size() == 0) {
+				System.out.print('!');
+				return 99;
+			}
+			
+			for (int rank=0; rank<answers.size(); rank++) {
+				Answer candidate = answers.get(rank);
+				if (Score.get(candidate.scores, "CORRECT", 0.0) > 0.99) {
+					total_inverse_rank.addAndGet(1 / ((double)rank + 1));
+					available.incrementAndGet();
+					if (rank < 100) correct_rank = rank;
+					break;
+				}
+			}
+			if (correct_rank == 0) {
+				total_correct.incrementAndGet();
+				System.out.print('#');
+			} else if (correct_rank < 3) {
+				System.out.print('o');
+			} else if (correct_rank < 99) {
+				System.out.print('.');
+			} else {
+				System.out.print(' ');
+			}
+			
+			total_answers += answers.size();
+			//System.out.println("Q: " + text.question + "\n" +
+			//		"A[Guessed: " + top_answer.getScore() + "]: " + top_answer.getTitle() + "\n" +
+			//		"A[Actual:" + correct_answer_score + "]: "  + text.answer);
+			return correct_rank;
+		}).mapToObj(x -> {int[] xs = new int[100]; xs[x] = 1; return xs;}).reduce(new int[100], StatsGenerator::add);
+	
+		// Only count the rank of questions that were actually there
+		// This is not atomic but by now only one is running
+		total_inverse_rank.set(total_inverse_rank.doubleValue() / available.doubleValue());
+		// Finish the timing
+		runtime = System.nanoTime() - start_time;
+		runtime /= 1e9;
+		report(all_ranks);
 	}
 	
-	/** Callback for every correct answer */
-	public void onCorrectAnswer(List<Answer> answers, Answer candidate, int rank) {
-		total_inverse_rank += 1 / ((double)rank + 1);
-		available++;
-		// Clamp the rank to 100. Past that we don't have a histogram.
-		correct[rank < 100 ? rank : 99]++;
+	private static int[] add(int[] a, int[] b) {
+		int[] c = new int[a.length];
+		for (int i=0; i<a.length; i++)
+			c[i] = a[i] + b[i];
+		return c;
 	}
 	
 	/** Send Statistics to the server */
-	private void report() {
+	private void report(int[] correct) {
 		
 		// At worst, give an empty branch and commit
 		String branch = "", commit = "";
@@ -209,8 +256,8 @@ class StatsGenerator {
 				.add("run[rank]", String.valueOf(total_inverse_rank))
 				.add("run[total_questions]", String.valueOf(questionsource.size()))
 				.add("run[total_answers]", String.valueOf(total_answers))
-				.add("run[confidence_histogram]", StringUtils.join(conf_hist, " "))
-				.add("run[confidence_correct_histogram]", StringUtils.join(conf_correct, " "))
+				.add("run[confidence_histogram]", StringUtils.join(new int[100], " "))
+				.add("run[confidence_correct_histogram]", StringUtils.join(new int[100], " "))
 				.add("run[runtime]", String.valueOf(runtime))
 				.build();
 		try {
@@ -224,48 +271,5 @@ class StatsGenerator {
 		log.info(correct[0] + " of " + questionsource.size() + " correct");
 		log.info(available + " of " + questionsource.size() + " could have been");
 		log.info("Mean Inverse Rank " + total_inverse_rank);
-	}
-	
-	
-	/** Run statistics, then upload to the server */
-	public void run() {
-		final long start_time = System.nanoTime();
-		
-        //BasicConfigurator.configure();
-        //Logger.getRootLogger().setLevel(Level.INFO);
-		
-		log.info("Asking Questions");
-		DefaultPipeline pipe = new DefaultPipeline(run_start); 
-		for (int i=0; i<questionsource.size(); i++) {
-			Question q = questionsource.get(i);
-			List<Answer> answers = pipe.ask(q);
-			
-			System.out.print(" " + i);
-			if (i % 25 == 0) System.out.println();
-			
-			if (answers.size() == 0) continue;
-	
-			for (int rank=0; rank<answers.size(); rank++) {
-				Answer candidate = answers.get(rank);
-				if (Score.get(candidate.scores, "CORRECT", 0.0) > 0.99) {
-					onCorrectAnswer(answers, candidate, rank);
-					break;
-				}
-			}
-			
-			calculateConfidenceHistogram(answers);
-			
-			total_answers += answers.size();
-			//System.out.println("Q: " + text.question + "\n" +
-			//		"A[Guessed: " + top_answer.getScore() + "]: " + top_answer.getTitle() + "\n" +
-			//		"A[Actual:" + correct_answer_score + "]: "  + text.answer);
-		}
-	
-		// Only count the rank of questions that were actually there
-		total_inverse_rank /= available;
-		// Finish the timing
-		runtime = System.nanoTime() - start_time;
-		runtime /= 1e9;
-		report();
 	}
 }

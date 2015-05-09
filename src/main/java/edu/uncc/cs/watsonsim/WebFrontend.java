@@ -8,23 +8,31 @@ import spark.*;
 public class WebFrontend {
 
 	public static void main(String[] args) {
-		
+
 		externalStaticFileLocation("public");
-		get(new Route("/ask") {
-			@Override
-			public Object handle(Request request, Response response) {
-	    		Question question = new Question(request.queryParams("query"));
-	    		List<Answer> answers = new DefaultPipeline().ask(question);
-		        
-	    		String output = "";
-		        // Print out a simple one-line summary of each answer
-		        for (Answer r: answers) {
-		        	output += r.toJSON() + ",";
-		        }
-		        response.type("application/json");
-		        return String.format("{\"answers\": [%s]}", output.substring(0, output.length() - 1));
-			}
+		get("/ask", (Request request, Response response) -> {
+    		Question question = new Question(request.queryParams("query"));
+    		/*
+    		OutputStream st = response.raw().getOutputStream();
+    		Logger.getRootLogger().addAppender(
+    				new WriterAppender(
+    						new SimpleLayout(),
+    						st));*/
+    		List<Answer> answers = new DefaultPipeline().ask(question);
+	        
+    		StringBuilder output = new StringBuilder();
+	        // Throw whole summaries of the data at the client
+	        for (Answer r: answers) {
+	        	output.append(r.toJSON());
+	        	output.append(',');
+	        }
+	        
+	        
+	        response.type("application/json");
+	        return String.format("{\"id\": {\"answers\": [%s]}", output.substring(0, output.length() - 1));
 		});
+		
+		
 
 	}
 

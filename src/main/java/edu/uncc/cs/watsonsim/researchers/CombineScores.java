@@ -37,6 +37,8 @@ import weka.core.Utils;
  * 
  * Sorts and reverses the result, so that the top answer is at rank 0.
  * 
+ * As of April 23, the best SVM settings at are at C=16 gamma=0.1
+ * 
  * @author Walid Shalaby
  */
 public class CombineScores extends Researcher {
@@ -110,7 +112,6 @@ public class CombineScores extends Researcher {
 	public double score(double[] attributesValues) throws Exception {
 		Instance inst = new Instance(1, attributesValues);
 		inst.setDataset(qResultsDataset);
-		//System.out.println(qResultsDataset.classAttribute().value((int)scorerM	odel.classifyInstance(inst)));
 		return scorerModel.distributionForInstance(inst)[1];
 		//return scorerModel.classifyInstance(inst);
 	}

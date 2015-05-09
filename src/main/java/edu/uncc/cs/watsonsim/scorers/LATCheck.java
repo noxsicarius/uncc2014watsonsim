@@ -46,7 +46,7 @@ public class LATCheck extends AnswerScorer {
 		 * 
 		 * Right now, we are using (G2, C1).
 		 */
-		if (!q.simple_lat.isEmpty()) {
+		/*if (!q.simple_lat.isEmpty()) {
 			List<Weighted<String>> question_synonyms = syn.viaWikiLinks(new String[]{q.simple_lat});
 			question_synonyms.add(new Weighted<String>(q.simple_lat, 1000.0));
 			for (Weighted<String> synonym : question_synonyms) {
@@ -59,6 +59,10 @@ public class LATCheck extends AnswerScorer {
 					}
 				}
 			}
+		}*/
+		for (String lextype : a.lexical_types) {
+			if (syn.matchViaSearch(q.simple_lat, lextype))
+				return 1.0;
 		}
 		return -1.0;
 	}

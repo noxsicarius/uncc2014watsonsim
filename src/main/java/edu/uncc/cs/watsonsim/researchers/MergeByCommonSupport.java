@@ -11,7 +11,6 @@ import edu.uncc.cs.watsonsim.Passage;
 import edu.uncc.cs.watsonsim.Question;
 
 public class MergeByCommonSupport extends Researcher {
-	private Logger log = Logger.getLogger(getClass());
 	
 	@Override
 	/** Call merge on any two answers, where the answers have more passages in common than different*/
@@ -30,9 +29,10 @@ public class MergeByCommonSupport extends Researcher {
 					int example_cardinality = e_passages.size();
 					e_passages.retainAll(o_passages);
 					
-					if (    (e_passages.size() /
-							(example_cardinality + o_passages.size() - e_passages.size())
-							> 0.5) ) {
+					double percent_common = e_passages.size() /
+							(example_cardinality + o_passages.size() - e_passages.size() + 0.01);
+					
+					if ( percent_common > 0.5 ) {
 						// If the intersection > half the union, then merge the questions
 						block.add(original);
 						continue each_answer;
