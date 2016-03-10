@@ -4,26 +4,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import edu.stanford.nlp.util.Pair;
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.Environment;
 import edu.uncc.cs.watsonsim.Passage;
 import edu.uncc.cs.watsonsim.Phrase;
 import edu.uncc.cs.watsonsim.Question;
+import edu.uncc.cs.watsonsim.nlp.ClueType;
 import edu.uncc.cs.watsonsim.nlp.DBPediaCandidateType;
 import edu.uncc.cs.watsonsim.nlp.SupportCandidateType;
-import edu.uncc.cs.watsonsim.nlp.Synonyms;
+import edu.uncc.cs.watsonsim.nlp.Relatedness;
 
 
 public class TagLAT extends Researcher {
 	private final DBPediaCandidateType dbpedia;
-	private final Synonyms syn;
+	private final Relatedness syn;
 	
 	public TagLAT(Environment env) {
 		dbpedia = new DBPediaCandidateType(env);
-		syn = new Synonyms(env);
+		syn = new Relatedness(env);
 	}
 	
 	public List<Answer> pull(Question q, List<Answer> answers) {
@@ -63,15 +62,15 @@ public class TagLAT extends Researcher {
 			for (Passage p: a.passages) {
 				List<Pair<String, String>> types = p.memo(SupportCandidateType::extract);
 				for (Pair<String, String> name_and_type : types) {
-					String name = name_and_type.first;
-					String type = name_and_type.second;
-					if (syn.matchViaSearch(name, a.text)) {
+					Phrase name = new Phrase(name_and_type.first);
+					Phrase type = new Phrase(name_and_type.second);
+					if (syn.implies(a, name)) {
 						a.log(this, "Passage %s says it's a %s.", p.reference, type);
-						a.lexical_types.add(type);
+						a.lexical_types.add(type.text);
 						support_types++;
-					} else if (syn.matchViaSearch(type, q.simple_lat)) {
-						Answer suggestion = new Answer(name);
-						suggestion.lexical_types = Arrays.asList(type);
+					} else if (syn.implies(type, new Phrase(q.memo(ClueType::fromClue)))) {
+						Answer suggestion = new Answer(name.text);
+						suggestion.lexical_types = Arrays.asList(type.text);
 						suggestion.log(this, "Found it's a %s, while reading about %s in %s", type, a, p.reference);
 						if (!(suggestions.contains(suggestion)
 								|| answers.contains(suggestion))) {

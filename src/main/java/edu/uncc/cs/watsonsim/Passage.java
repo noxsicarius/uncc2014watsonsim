@@ -1,5 +1,7 @@
 package edu.uncc.cs.watsonsim;
 
+import org.json.simple.JSONObject;
+
 import org.apache.commons.lang3.StringEscapeUtils;
 
 
@@ -10,7 +12,7 @@ public class Passage extends Phrase {
 	public final String title;
 	
 	// Mutable
-    public double[] scores = Score.empty();
+    public Score scores = Score.empty();
     
     /**
      * Create a new Passage
@@ -40,12 +42,6 @@ public class Passage extends Phrase {
 		scores = original.scores.clone();
 	}
     
-    /** Return the value of this Score for this answer, or null */
-    public double score(String name) {
-    	scores = Score.update(scores);
-    	return Score.get(scores, name, -1);
-    }
-    
     /** Set the value of this Score for this passage, returning the passage.
      * 
      * The intended use is something like this:
@@ -54,8 +50,18 @@ public class Passage extends Phrase {
      * @param value
      */
     public Passage score(String name, double value) {
-    	scores = Score.set(scores, name, value);
+    	scores.put(name, value);
     	return this;
+    }
+    
+    /** Return a JSON object with the same fields */
+    public JSONObject toJSON() {
+		JSONObject jo = new JSONObject();
+		jo.put("text", text);
+		jo.put("title", title);
+		jo.put("reference", reference);
+		jo.put("engine_name", engine_name);
+		return jo;
     }
 	
 	/******************************************************
@@ -68,7 +74,7 @@ public class Passage extends Phrase {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + tokens.hashCode();
+		result = prime * result + getTokens().hashCode();
 		result = prime * result + engine_name.hashCode();
 		result = prime * result + reference.hashCode();
 		result = prime * result + text.hashCode();
@@ -85,7 +91,7 @@ public class Passage extends Phrase {
 		if (getClass() != obj.getClass())
 			return false;
 		Passage other = (Passage) obj;
-		if (!tokens.equals(other.tokens))
+		if (!getTokens().equals(other.getTokens()))
 			return false;
 		else if (!engine_name.equals(other.engine_name))
 			return false;

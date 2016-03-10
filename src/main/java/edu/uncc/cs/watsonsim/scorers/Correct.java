@@ -3,13 +3,12 @@ package edu.uncc.cs.watsonsim.scorers;
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.Environment;
 import edu.uncc.cs.watsonsim.Question;
-import edu.uncc.cs.watsonsim.StringUtils;
-import edu.uncc.cs.watsonsim.nlp.Synonyms;
+import edu.uncc.cs.watsonsim.nlp.Relatedness;
 
 public class Correct extends AnswerScorer {
-	private final Synonyms syn;
+	private final Relatedness syn;
 	public Correct(Environment env) {
-		syn = new Synonyms(env);
+		syn = new Relatedness(env);
 	}
 	@Override
 	/**
@@ -17,12 +16,10 @@ public class Correct extends AnswerScorer {
 	 * @returns correctness		0.0 -> incorrect, 1.0 -> correct
 	 * */
 	public double scoreAnswer(Question q, Answer a) {
-		if (q.answer == null) {
+		if (q.correct_answer == null) {
 			return 0;
 		} else {
-			return (syn.matchViaLevenshtein(q.answer.text, a.text)
-					|| syn.matchViaSearch(q.answer.text, a.text)
-					|| StringUtils.containsIgnoreCase(a.text, q.answer.text)) ? 1 : 0;
+			return syn.implies(q.correct_answer, a) ? 1 : 0;
 		}
         
 	}

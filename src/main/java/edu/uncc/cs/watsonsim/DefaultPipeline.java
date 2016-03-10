@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.apache.log4j.Logger;
-
 import edu.uncc.cs.watsonsim.researchers.*;
 import edu.uncc.cs.watsonsim.scorers.*;
 import edu.uncc.cs.watsonsim.search.*;
@@ -49,11 +47,10 @@ public class DefaultPipeline {
 	private final Researcher early_researchers;
 	private final Scorer[] scorers;
 	private final Researcher late_researchers;
-
 	private final Environment env = new Environment();
+	
 	/**
-	 * Start a pipeline with an existing timestamp
-	 * @param millis Millis since the Unix epoch, as in currentTimeMillis()
+	 * Start a new question answering pipeline.
 	 */
 	public DefaultPipeline() {
 		Timestamp run_start = new Timestamp(System.currentTimeMillis());
@@ -64,16 +61,22 @@ public class DefaultPipeline {
 		searchers = new Searcher[]{
 			new LuceneSearcher(env),
 			new IndriSearcher(env, false),
+			new MeanDVSearch(env),
+			//new SemanticVectorSearcher(env),
 			// You may want to cache Bing results
 			// new BingSearcher(config),
 			new CachingSearcher(env, new BingSearcher(env), "bing"),
 			new Anagrams(env)
 		};
-		early_researchers = Researcher.pipe(env.log,	
+		early_researchers = Researcher.pipe(env.log,
+			// Most of the suggestions are garbage
 			//new RedirectSynonyms(env),
 			new HyphenTrimmer(),
 			new StrictFilters(),
-			new AnswerTrimming(),
+			// This causes too much network traffic.
+			//new URLExpander(env),
+			// Often trims good parts of correct answers
+			//new AnswerTrimming(), // Overshoots
 			new MergeByText(env),
 			new MergeAnswers(),
 			//new ChangeFitbAnswerToContentsOfBlanks(),
@@ -93,6 +96,8 @@ public class DefaultPipeline {
 			new CommonConstituents(),
 			new Correct(env),
 			new DateMatches(),
+			new Entropy(env),
+			new GloveAnswerQuestionContext(),
 			new LATCheck(env),
 			new LATMentions(),
 			new LuceneEcho(),
@@ -100,6 +105,7 @@ public class DefaultPipeline {
 			new PassageTermMatch(),
 			new PassageCount(),
 			new PassageQuestionLengthRatio(),
+			new QuestionID(),
 			new QPKeywordMatch(),
 			new QAKeywordMatch(),
 			new SkipBigram(),
@@ -139,7 +145,6 @@ public class DefaultPipeline {
 				answers.add(new Answer(p));
 		l.info("Generated " + answers.size() + " candidate answers.");
 		
-		
 		answers = early_researchers.pull(question, answers);
     	
     	l.info("Scoring supporting evidence..");
@@ -149,7 +154,6 @@ public class DefaultPipeline {
         l.info("Computing confidence..");
         
         answers = late_researchers.pull(question, answers);
-        env.db.release();
         return answers;
     }
 }

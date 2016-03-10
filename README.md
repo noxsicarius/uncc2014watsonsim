@@ -1,4 +1,4 @@
-[Watsonsim Question Answering System](http://watsonsim.blogspot.com) [![Build Status](https://travis-ci.org/SeanTater/uncc2014watsonsim.png?branch=master)](https://travis-ci.org/SeanTater/uncc2014watsonsim)
+[Watsonsim Question Answering System](http://blog.watsonphd.com) [![Build Status](https://travis-ci.org/SeanTater/uncc2014watsonsim.png?branch=master)](https://travis-ci.org/SeanTater/uncc2014watsonsim)
 ======
 
 ## Quick Intro
@@ -35,11 +35,14 @@ But, if you prefer, you can also use Eclipse. First create a project.
 ```sh
 gradle eclipse -Ptarget
 ```
-Then remove apache-jena-libs-*.pom since Eclipse cannot handle .pom in the build path, and all the necessary dependencies it references will have already been included. Then you can run WatsonSim.java directly.
+Then you can run WatsonSim.java directly.
 
-You can also run the accuracy tests using a script:
+There are a few other features as well
 ```sh
+# Generate statistics reports for accuracy and other measurements
 gradle run -Ptarget=scripts.ParallelStats
+# Regenerate the Indri, Lucene, SemanticVectors, Bigram and Edge indices
+gradle run -Ptarget=index.Reindex
 ```
 
 ## Technologies Involved
@@ -69,3 +72,17 @@ This list isn't exhaustive, but it should be a good overview
 - [Check to see if your commit broke the code](https://travis-ci.org/SeanTater/uncc2014watsonsim)
 - [Examine the reference documentation](http://seantater.github.io/uncc2014watsonsim/)
 - [Find out how much better your code works than the last commit](http://watsonsim.herokuapp.com/runs)
+
+## Giving Back
+Do you like this project? Then help make it better! We can use all kinds of help, whether you're a scientist, an engineer, or just a curious user! 
+
+Also, you may be interested to read (or to cite!) our paper:
+```bib
+@TechReport{GallagherTR2014,
+author = {Gallagher, Sean and Zadrozny, Wlodek W. and Shalaby, Walid and Avadhani, Adarsh},
+title = {Watsonsim: Overview of a Question Answering Engine},
+institution = {University of North Carolina at Charlotte},
+month = {December},
+year = {2014},
+}
+```

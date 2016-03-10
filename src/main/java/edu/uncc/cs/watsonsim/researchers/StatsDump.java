@@ -8,15 +8,9 @@ import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.*;
 
 import java.nio.charset.Charset;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-
 import edu.uncc.cs.watsonsim.Answer;
-import edu.uncc.cs.watsonsim.Database;
 import edu.uncc.cs.watsonsim.Environment;
 import edu.uncc.cs.watsonsim.Question;
 import edu.uncc.cs.watsonsim.Score;
@@ -48,9 +42,9 @@ public class StatsDump extends Researcher {
 		JSONObject jquestion = new JSONObject();
 		jquestion.put("text", q.text);
 		jquestion.put("category", q.getCategory());
-		jquestion.put("graphs", q.graphs.toString());
-		jquestion.put("trees", q.trees.toString());
-		jquestion.put("tokens", q.tokens.toString());
+		jquestion.put("graphs", q.getGraphs().toString());
+		jquestion.put("trees", q.getTrees().toString());
+		jquestion.put("tokens", q.getTokens().toString());
 		// defaults
 		jquestion.put("correct", false);
 		jquestion.put("rank", -1);
@@ -65,7 +59,7 @@ public class StatsDump extends Researcher {
 			
 			ja.put("text", a.text);
 			ja.put("evidence", a.explain());
-			boolean correct = Score.get(a.scores, "CORRECT", 0) > 0.99;
+			boolean correct = a.scores.get("CORRECT") > 0.99;
 			ja.put("correct", correct);
 			
 			// Convenience attributes

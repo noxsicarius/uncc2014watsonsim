@@ -1,23 +1,6 @@
 package edu.uncc.cs.watsonsim;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
-
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
  * Wrapper logger
@@ -40,17 +23,17 @@ public class Log {
 	public static final Log NIL = new Log(Object.class, x->{});
 	
 	// Start a root logger
-	public Log(Class<?> speaker, Consumer<String> listener) {
+	public Log(Object speaker, Consumer<String> listener) {
 		this.parent = null;
-		this.speaker = speaker;
+		this.speaker = speaker.getClass();
 		this.start = System.currentTimeMillis();
 		this.listener = listener;
 	}
 	
 	// Start a child logger
-	private Log(Class<?> speaker, Log parent) {
+	private Log(Object speaker, Log parent) {
 		this.parent = parent;
-		this.speaker = speaker;
+		this.speaker = speaker.getClass();
 		this.start = parent.start;
 	}
 	

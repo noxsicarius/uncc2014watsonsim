@@ -3,8 +3,6 @@ package edu.uncc.cs.watsonsim.researchers;
 import java.util.List;
 import java.util.regex.Matcher;
 
-import org.apache.log4j.Logger;
-
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.Environment;
 import edu.uncc.cs.watsonsim.Passage;
@@ -39,7 +37,7 @@ public class PassageRetrieval extends Researcher {
 		}).sum();
 	    	
 		
-		log.info("Found " + total_passages + " supporting passages.");
+		q.log.info("Found " + total_passages + " supporting passages.");
 		return answers;
 	}
 

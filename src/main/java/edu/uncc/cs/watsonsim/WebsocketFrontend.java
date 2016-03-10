@@ -10,20 +10,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
 
 import org.java_websocket.WebSocket;
 import org.java_websocket.WebSocketImpl;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
 import org.json.simple.JSONObject;
-import org.json.simple.JSONArray;
 
 /**
  * A simple WebSocketServer implementation. Keeps track of a "chatroom".
@@ -132,10 +127,6 @@ public class WebsocketFrontend extends WebSocketServer {
 			String in = sysin.readLine();
 			if( in.equals( "exit" ) ) {
 				s.stop();
-				break;
-			} else if( in.equals( "restart" ) ) {
-				s.stop();
-				s.start();
 				break;
 			}
 		}

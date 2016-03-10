@@ -3,8 +3,6 @@ package edu.uncc.cs.watsonsim.researchers;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.Question;
 
@@ -36,7 +34,7 @@ public class StrictFilters extends Researcher {
 			// The longest real answer in our sample of about 40,000 is:
 			// How much wood would a woodchuck chuck if a woodchuck could chuck wood?
 			// and it's 70 characters long. So cut there.
-			else if (a.tokens.isEmpty() || a.text.length() > 70) {}
+			else if (a.getTokens().isEmpty() || a.text.length() > 70) {}
 			
 			// Is over half of it non-Latin text?
 			else if (a.text.replaceAll("[^A-Za-z0-9 ]", "").length() * 2 < a.text.length()) {}

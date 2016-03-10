@@ -4,11 +4,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import org.apache.log4j.Logger;
-
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.Question;
-import edu.uncc.cs.watsonsim.StringUtils;
 
 /*Author : Ricky Sanders
  * 
@@ -28,12 +25,12 @@ public class MergeAnswers extends Researcher{
 		each_answer:
 		for (Answer original : answers) {
             HashSet<String> original_terms = new HashSet<String>();
-            original_terms.addAll(original.tokens);
+            original_terms.addAll(original.getTokens());
             //return reference_terms.containsAll(StringUtils.tokenize(reference));
 			for (List<Answer> block : answer_blocks) {
 				for (Answer example : block) {
 		            HashSet<String> example_terms = new HashSet<String>();
-		            example_terms.addAll(example.tokens);
+		            example_terms.addAll(example.getTokens());
 					// Look through the examples in this topic
 					// If it matches, choose to put it in this block and quit.
 		            

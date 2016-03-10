@@ -4,7 +4,7 @@ import java.util.List;
 
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.Passage;
-import edu.uncc.cs.watsonsim.Question;
+import edu.uncc.cs.watsonsim.Phrase;
 import edu.uncc.cs.watsonsim.StringUtils;
 
 /*Author : Jacob Medd, Jagan Vujjini
@@ -22,11 +22,11 @@ import edu.uncc.cs.watsonsim.StringUtils;
 
 public class QPKeywordMatch extends PassageScorer {
 	
-	public double scorePassage(Question q, Answer a, Passage p) {
+	public double scorePassage(Phrase q, Answer a, Passage p) {
 			List<String> questionTextArray = StringUtils.tokenize(q.text);
 			int count = 0;
 			for (String word : questionTextArray)
-				if (p.tokens.contains(word))
+				if (p.getTokens().contains(word))
 					count += 1;
 			return (count / (double)questionTextArray.size());
 	}

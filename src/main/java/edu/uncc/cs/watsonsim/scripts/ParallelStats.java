@@ -1,18 +1,12 @@
 package edu.uncc.cs.watsonsim.scripts;
 
 import java.io.BufferedReader;
-import java.io.Console;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
-
 import org.apache.http.NameValuePair;
 import org.apache.http.client.fluent.Form;
 import org.apache.http.client.fluent.Request;
@@ -23,15 +17,11 @@ import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.DBQuestionSource;
 import edu.uncc.cs.watsonsim.DefaultPipeline;
 import edu.uncc.cs.watsonsim.Environment;
-import edu.uncc.cs.watsonsim.Question;
-import edu.uncc.cs.watsonsim.Score;
 import edu.uncc.cs.watsonsim.StringUtils;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.uima.internal.util.IntArrayUtils;
-
 import com.google.common.util.concurrent.AtomicDouble;
 
 /**
@@ -51,14 +41,18 @@ public class ParallelStats {
         
         
         //String mode = System.console().readLine("Train or test [test]:");
-        System.out.print("Train or test [test]: ");
+        System.out.print("Train, test, minitrain or minitest [minitest]: ");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         String mode = br.readLine();
         String sql;
-        if (mode.equals("train")) {
-        	sql = String.format("cached LIMIT %d OFFSET %d", 2000, 0);
+        if (mode.equals("test")) {
+        	sql = String.format("ORDER BY permute LIMIT %d OFFSET %d", 2000, 0);
+        } else if (mode.equals("train")) {
+        	sql = String.format("ORDER BY permute LIMIT %d OFFSET %d", 10000, 2000);
+        } else if (mode.equals("minitrain")) {
+        	sql = String.format("ORDER BY permute LIMIT %d OFFSET %d", 1000, 0);
         } else {
-        	sql = String.format("cached LIMIT %d OFFSET %d", 5000, 2000);
+        	sql = String.format("ORDER BY permute LIMIT %d OFFSET %d", 1000, 2000);
         }
 		
         System.out.print("Describe the setup: ");
@@ -137,11 +131,11 @@ class StatsGenerator {
 	public void run() {
 		final long start_time = System.nanoTime();
 		
-        //BasicConfigurator.configure();
-        //Logger.getRootLogger().setLevel(Level.INFO);
+        BasicConfigurator.configure();
+        Logger.getRootLogger().setLevel(Level.ERROR);
 		
-		log.info("Performing train/test session\n"
-				+ "    #=top    x=top3    .=recall    ' '=missing");
+		System.out.println("Performing train/test session\n"
+				+ "    #=top    o=top3    .=recall    ' '=missing");
 		ConcurrentHashMap<Long, DefaultPipeline> pipes =
 				new ConcurrentHashMap<>();
 		
@@ -151,7 +145,7 @@ class StatsGenerator {
 			
 			List<Answer> answers;
 			try{
-				answers = pipe.ask(q);
+				answers = pipe.ask(q, message -> {});
 			} catch (Exception e) {
 				log.fatal(e, e);
 				return 99;
@@ -160,9 +154,11 @@ class StatsGenerator {
 			int tq = total_questions.incrementAndGet();
 			if (tq % 50 == 0) {
 				System.out.println(
-						String.format("[%d]: %d accurate",
-								total_questions.get(), total_correct.get()));
-				
+					String.format(
+						"[%d]: %d (%.02f%%) accurate",
+						total_questions.get(),
+						total_correct.get(),
+						total_correct.get() * 100.0 / total_questions.get()));
 			}
 			
 			int correct_rank = 99;
@@ -174,7 +170,7 @@ class StatsGenerator {
 			
 			for (int rank=0; rank<answers.size(); rank++) {
 				Answer candidate = answers.get(rank);
-				if (Score.get(candidate.scores, "CORRECT", 0.0) > 0.99) {
+				if (candidate.scores.get("CORRECT") > 0.99) {
 					total_inverse_rank.addAndGet(1 / ((double)rank + 1));
 					available.incrementAndGet();
 					if (rank < 100) correct_rank = rank;

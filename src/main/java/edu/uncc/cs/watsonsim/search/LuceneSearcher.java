@@ -58,8 +58,12 @@ public class LuceneSearcher extends Searcher {
 	public List<Passage> query(Question question) {
 		List<Passage> results = new ArrayList<>();
 		try {
+			//ScoreDoc[] hits = env.simpleLuceneQuery(question.text, MAX_RESULTS);
 			ScoreDoc[] hits = lucene.search(
-					queryFromSkipBigrams(question.text + " " + question.getCategory()),
+					queryFromSkipBigrams(
+							question.text
+							+ " "
+							+ question.getCategory()),
 					MAX_RESULTS).scoreDocs;
 			// This isn't range based because we need the rank
 			for (int i=0; i < hits.length; i++) {
@@ -70,7 +74,7 @@ public class LuceneSearcher extends Searcher {
 						"",	// Title - filled in by shared db
 						"", // Text - filled in by shared db
 						doc.get("docno"))   // Reference
-						.score("LUCENE_ANSWER_RANK", (double) i)           // Rank
+						.score("LUCENE_ANSWER_RANK", (double) i)        // Rank
 						.score("LUCENE_ANSWER_SCORE", (double) s.score)	// Source
 						.score("LUCENE_ANSWER_PRESENT", 1.0)
 						);

@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.log4j.Logger;
-
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.Database;
 import edu.uncc.cs.watsonsim.Environment;
@@ -47,7 +45,7 @@ public class RedirectSynonyms extends Researcher {
 							new ArrayList<>(a.passages),
 							a.scores.clone(),
 							StringEscapeUtils.unescapeXml(results.getString("source")));
-					Score.set(a.scores, "IS_WIKI_REDIRECT", 1.0);
+					a.scores.put("IS_WIKI_REDIRECT", 1.0);
 					new_answers.add(new_answer);
 				}
 			} catch (SQLException e) {

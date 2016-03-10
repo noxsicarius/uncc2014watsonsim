@@ -1,14 +1,12 @@
 package edu.uncc.cs.watsonsim.scorers;
 
-import java.util.List;
-
 import org.apache.log4j.Logger;
 
 import edu.uncc.cs.watsonsim.Answer;
 import edu.uncc.cs.watsonsim.Environment;
 import edu.uncc.cs.watsonsim.Question;
-import edu.uncc.cs.watsonsim.nlp.Synonyms;
-import edu.uncc.cs.watsonsim.nlp.Weighted;
+import edu.uncc.cs.watsonsim.nlp.ClueType;
+import edu.uncc.cs.watsonsim.nlp.Relatedness;
 import edu.uncc.cs.watsonsim.scorers.AnswerScorer;
 
 /**
@@ -17,14 +15,14 @@ import edu.uncc.cs.watsonsim.scorers.AnswerScorer;
  *
  */
 public class LATCheck extends AnswerScorer {
-	private final Synonyms syn;
+	private final Relatedness syn;
 	private final Logger log = Logger.getLogger(getClass());
 	
 	/**
 	 * Create a new LATCheck using a shared environment
 	 */
 	public LATCheck(Environment env) {
-		syn = new Synonyms(env);
+		syn = new Relatedness(env);
 	}
 	
 	@Override
@@ -61,7 +59,7 @@ public class LATCheck extends AnswerScorer {
 			}
 		}*/
 		for (String lextype : a.lexical_types) {
-			if (syn.matchViaSearch(q.simple_lat, lextype))
+			if (syn.matchViaSearch(q.memo(ClueType::fromClue), lextype))
 				return 1.0;
 		}
 		return -1.0;

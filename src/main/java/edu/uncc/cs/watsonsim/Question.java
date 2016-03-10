@@ -2,77 +2,72 @@ package edu.uncc.cs.watsonsim;
 
 import org.apache.log4j.Logger;
 
-import edu.uncc.cs.watsonsim.nlp.ClueType;
-
-
+/**
+ * An immutable natural language phrase intended to be evaluated as a question
+ * or clue.
+ * 
+ * Available annotators (there may be more, these just get you started)
+ * ClueType.fromClue
+ * QClassDetection.detectType
+ * 
+ * @author Sean
+ */
 public class Question extends Phrase {
-	public Answer answer;
-    private String category = "unknown";
-    private QType type;
-    public final String simple_lat;
+	public final Answer correct_answer;
+    private final String category;
+    private final QType type;
     
- 
     /**
-     * Create a question from it's raw text
+     * Construct a new question for analysis.
+     * @param question   The natural language clue
+     * @param correct_answer  The target answer, if available (or null)
+     * @param category  The category of the problem, also natural language
      */
-    public Question(String text) {
-    	super(text);
+    public Question(String question, Answer correct_answer, String category) {
+    	super(question);
+    	this.correct_answer = correct_answer;
+    	this.category = category;
         this.type = QClassDetection.detectType(this);
-        simple_lat = ClueType.fromClue(trees.get(0));
-        
+        this.memo(QClassDetection::detectType);
         Logger log = Logger.getLogger(getClass());
-        if (simple_lat.isEmpty())
-        	log.info("Couldn't find a LAT.");
-        else
-        	log.info("Looking for a " + simple_lat);
-        
         log.info("Looks like a " + type.toString().toLowerCase() + " question");
-    	
-    	
     }
-
+    
+    /**
+     * Create a simple question without bells and whistles
+     */
+    public Question(String question) {
+    	this(question, null, "");
+    }
+    
 	/**
-     * Create a question given it's raw text and category
+     * Create a question from a clue and a hint about it's category
      */
     public Question(String question, String category) {
-        this(question);
-        this.setCategory(category);
+        this(question, null, category);
     }
 
     /**
-     * Create a question to which the raw text and answer are known but not the
-     * category
+     * Create a question with a clue and plain string answer but no category
      */
     public static Question known(String question, String answer) {
-        Question q = new Question(question);
-        q.answer = new Answer("answer", answer, answer, "");
-        return q;
+        return known(question, answer, "");
     }
 
     /**
-     * Create a question to which the raw text, answer, and category are known
+     * Create a question with a clue, a plain string answer, and category
      */
     public static Question known(String question, String answer, String category) {
-        Question q = new Question(question);
-        q.answer = new Answer("answer", answer, answer, "");
-        q.setCategory(category);
-        return q;
+        return new Question(question,
+        		new Answer("answer", answer, answer, ""),
+				category);
     }
 
     public String getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
-        this.category = category;
-    }
-
     public QType getType() {
         return type;
-    }
-
-    public void setType(QType type) {
-        this.type = type;
-    }
-        
+    }   
 }
